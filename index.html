@@ -4,46 +4,62 @@
 <meta charset="UTF-8">
 <title>Перевірка дублікатів</title>
 <style>
-body { font-family: Arial, sans-serif; max-width: 700px; margin: 30px auto; }
-textarea { width: 100%; height: 200px; }
+body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; }
+textarea { width: 100%; height: 220px; }
 button { padding: 10px 20px; margin-top: 10px; }
-pre { background: #f4f4f4; padding: 10px; }
+pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; }
+input { width: 60px; }
 </style>
 </head>
 <body>
 
 <h2>🔁 Перевірка дублікатів номерів</h2>
 
-<textarea placeholder="Встав числа сюди (Ctrl+V) або завантаж CSV"></textarea>
+<p>
+Номер у колонці №
+<input type="number" id="colIndex" value="3" min="1">
+</p>
+
+<textarea placeholder="Встав дані (Ctrl+V) або завантаж CSV / TSV"></textarea>
 
 <br>
-<input type="file" accept=".csv">
+<input type="file" accept=".csv,.tsv,.txt">
 <br><br>
 
 <button onclick="checkDuplicates()">Перевірити</button>
 
-<h3>Результат:</h3>
+<h3>Результат (тільки дублікати):</h3>
 <pre id="result"></pre>
 
 <script>
-function parseText(text) {
-  return text
-    .split(/[\s,;]+/)
-    .map(x => x.trim())
-    .filter(x => x.length > 0);
+function splitLine(line) {
+  // tab, ; , або багато пробілів
+  return line.split(/\t|;|,(?=(?:[^"]*"[^"]*")*[^"]*$)|\s{2,}/);
 }
 
 function checkDuplicates() {
-  const textarea = document.querySelector("textarea");
-  const numbers = parseText(textarea.value);
+  const text = document.querySelector("textarea").value.trim();
+  const colIndex = parseInt(document.getElementById("colIndex").value, 10) - 1;
 
-  const map = {};
-  numbers.forEach(n => map[n] = (map[n] || 0) + 1);
+  if (!text) return;
+
+  const lines = text.split(/\r?\n/);
+  const rows = [];
+  const countMap = {};
+
+  for (const line of lines) {
+    const cols = splitLine(line);
+    if (!cols[colIndex]) continue;
+
+    const number = cols[colIndex].trim();
+    rows.push({ line, number });
+    countMap[number] = (countMap[number] || 0) + 1;
+  }
 
   let output = "";
-  for (const [num, count] of Object.entries(map)) {
-    if (count > 1) {
-      output += `${num} — ${count} рази\n`;
+  for (const row of rows) {
+    if (countMap[row.number] > 1) {
+      output += `${row.line} — Дубль\n`;
     }
   }
 
