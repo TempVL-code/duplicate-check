@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <title>Перевірка дублікатів</title>
 <style>
-body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; }
+body { font-family: Arial, sans-serif; max-width: 1000px; margin: 30px auto; }
 textarea { width: 100%; height: 220px; }
-button { padding: 10px 20px; margin-top: 10px; }
+button { padding: 8px 16px; margin: 5px 5px 5px 0; }
 pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; }
 input { width: 60px; }
 </style>
@@ -16,31 +16,40 @@ input { width: 60px; }
 <h2>🔁 Перевірка дублікатів номерів</h2>
 
 <p>
-Вкажіть в якій колонці потрібно шукати дублікати №
+Вкажіть колонку з номером №
 <input type="number" id="colIndex" value="3" min="1">
 </p>
 
 <textarea placeholder="Встав дані (Ctrl+V) або завантаж CSV / TSV"></textarea>
-
 <br>
 <input type="file" accept=".csv,.tsv,.txt">
 <br><br>
 
 <button onclick="checkDuplicates()">Перевірити</button>
+<button onclick="downloadUnique()">📥 Унікальні (CSV)</button>
+<button onclick="downloadDuplicates()">📥 Дублі (CSV)</button>
 
-<h3>Результат (тільки дублікати):</h3>
-<pre id="result"></pre>
+<h3>✅ Номери без дублів:</h3>
+<pre id="unique"></pre>
+
+<h3>🔁 Дублі (з додатковою інформацією):</h3>
+<pre id="duplicates"></pre>
 
 <script>
+let uniqueData = [];
+let duplicateData = [];
+
 function splitLine(line) {
-  // tab, ; , або багато пробілів
   return line.split(/\t|;|,(?=(?:[^"]*"[^"]*")*[^"]*$)|\s{2,}/);
+}
+
+function normalize(val) {
+  return val.replace(/^'+/, "").trim();
 }
 
 function checkDuplicates() {
   const text = document.querySelector("textarea").value.trim();
   const colIndex = parseInt(document.getElementById("colIndex").value, 10) - 1;
-
   if (!text) return;
 
   const lines = text.split(/\r?\n/);
@@ -50,27 +59,56 @@ function checkDuplicates() {
   for (const line of lines) {
     const cols = splitLine(line);
     if (!cols[colIndex]) continue;
-
-    const number = cols[colIndex].trim();
+    const number = normalize(cols[colIndex]);
     rows.push({ line, number });
     countMap[number] = (countMap[number] || 0) + 1;
   }
 
-  let output = "";
+  uniqueData = [];
+  duplicateData = [];
+
+  let uniqueOut = "";
+  let dupOut = "";
+
   for (const row of rows) {
-    if (countMap[row.number] > 1) {
-      output += `${row.line} — Дубль\n`;
+    const count = countMap[row.number];
+    if (count === 1) {
+      uniqueData.push(row.number);
+      uniqueOut += row.number + "\n";
+    } else {
+      duplicateData.push(row.line + ` — Дубль (${count} рази)`);
+      dupOut += row.line + ` — Дубль (${count} рази)\n`;
     }
   }
 
-  document.getElementById("result").textContent =
-    output || "Дублікатів не знайдено";
+  document.getElementById("unique").textContent =
+    uniqueOut || "Унікальних номерів не знайдено";
+
+  document.getElementById("duplicates").textContent =
+    dupOut || "Дублікатів не знайдено";
+}
+
+function downloadCSV(filename, rows) {
+  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+
+function downloadUnique() {
+  if (!uniqueData.length) return;
+  downloadCSV("unique_numbers.csv", uniqueData);
+}
+
+function downloadDuplicates() {
+  if (!duplicateData.length) return;
+  downloadCSV("duplicate_rows.csv", duplicateData);
 }
 
 document.querySelector("input[type=file]").addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = () => {
     document.querySelector("textarea").value = reader.result;
