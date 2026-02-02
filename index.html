@@ -10,7 +10,6 @@ button { padding: 8px 16px; margin: 5px 5px 5px 0; }
 pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; }
 input { width: 60px; }
 .stat { font-weight: bold; margin: 5px 0; }
-details { margin-top: 5px; }
 </style>
 </head>
 <body>
@@ -28,21 +27,15 @@ details { margin-top: 5px; }
 <br><br>
 
 <button onclick="checkDuplicates()">Перевірити</button>
-<button onclick="downloadUnique()">📥 Унікальні (CSV)</button>
 <button onclick="downloadDuplicates()">📥 Дублі (CSV)</button>
 
 <h3>📊 Статистика</h3>
 <div class="stat" id="stats"></div>
-<details id="uniqueDetails" style="display:none;">
-  <summary>📄 Показати список номерів без дублів</summary>
-  <pre id="uniqueList"></pre>
-</details>
 
 <h3>🔁 Дублі (згруповані):</h3>
 <pre id="duplicates"></pre>
 
 <script>
-let uniqueData = [];
 let duplicateData = [];
 
 function splitLine(line) {
@@ -74,18 +67,14 @@ function checkDuplicates() {
     groups[number].push(line);
   }
 
-  uniqueData = [];
   duplicateData = [];
-
   let dupOut = "";
   let duplicateNumberCount = 0;
   let duplicateRowCount = 0;
 
   for (const number of order) {
     const rows = groups[number];
-    if (rows.length === 1) {
-      uniqueData.push(number);
-    } else {
+    if (rows.length > 1) {
       duplicateNumberCount++;
       duplicateRowCount += rows.length;
       for (const row of rows) {
@@ -97,23 +86,15 @@ function checkDuplicates() {
     }
   }
 
+  const totalUniqueNumbers = order.length;
+
   document.getElementById("duplicates").textContent =
     dupOut || "Дублікатів не знайдено";
 
   document.getElementById("stats").textContent =
+    `🔢 Унікальних номерів (всього): ${totalUniqueNumbers} | ` +
     `🔁 Номерів з дублями: ${duplicateNumberCount} | ` +
-    `📄 Рядків-дублів: ${duplicateRowCount} | ` +
-    `✅ Номерів без дублів: ${uniqueData.length}`;
-
-  const details = document.getElementById("uniqueDetails");
-  const list = document.getElementById("uniqueList");
-
-  if (uniqueData.length) {
-    list.textContent = uniqueData.join("\n");
-    details.style.display = "block";
-  } else {
-    details.style.display = "none";
-  }
+    `📄 Рядків-дублів: ${duplicateRowCount}`;
 }
 
 function downloadCSV(filename, rows) {
@@ -122,11 +103,6 @@ function downloadCSV(filename, rows) {
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   link.click();
-}
-
-function downloadUnique() {
-  if (!uniqueData.length) return;
-  downloadCSV("unique_numbers.csv", uniqueData);
 }
 
 function downloadDuplicates() {
