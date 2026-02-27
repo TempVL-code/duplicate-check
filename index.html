@@ -184,8 +184,7 @@
         <thead>
           <tr>
             <th>№</th>
-            <th>Дата</th>
-            <th>Час</th>
+            <th>DateTime</th>
           </tr>
         </thead>
         <tbody id="previewBody"></tbody>
@@ -261,7 +260,7 @@ form.addEventListener('submit', e => {
     return;
   }
 
-  // 1. Збираємо всі робочі дні
+  // Збираємо робочі дні
   const workingDays = [];
   let current = new Date(start);
   while (current <= end) {
@@ -277,12 +276,11 @@ form.addEventListener('submit', e => {
     return;
   }
 
-  // 2. НОВА ЛОГІКА — абсолютно випадковий розподіл
+  // Генерація з випадковим вибором дня
   generatedData = [];
   let globalIndex = 1;
 
   for (let i = 0; i < count; i++) {
-    // Випадково обираємо будь-який робочий день
     const randomDayIndex = Math.floor(Math.random() * workingDays.length);
     const dayDate = workingDays[randomDayIndex];
 
@@ -290,41 +288,40 @@ form.addEventListener('submit', e => {
     const m  = dayDate.getMonth();
     const dd = dayDate.getDate();
 
-    // Генеруємо випадковий час 09:00–18:59:59
-    const h   = 9 + Math.floor(Math.random() * 10);     // 9..18
+    const h   = 9 + Math.floor(Math.random() * 10);
     const min = Math.floor(Math.random() * 60);
     const sec = Math.floor(Math.random() * 60);
 
     // Формат дати
-    let dateStr;
+    let datePart;
     switch (dateFmt) {
-      case 0: dateStr = `${y}-${pad(m+1)}-${pad(dd)}`; break;
-      case 1: dateStr = `${pad(dd)}.${pad(m+1)}.${y}`; break;
-      case 2: dateStr = `${pad(dd)}/${pad(m+1)}/${y}`; break;
-      case 3: dateStr = `${pad(m+1)}/${pad(dd)}/${y}`; break;
+      case 0: datePart = `${y}-${pad(m+1)}-${pad(dd)}`; break;
+      case 1: datePart = `${pad(dd)}.${pad(m+1)}.${y}`; break;
+      case 2: datePart = `${pad(dd)}/${pad(m+1)}/${y}`; break;
+      case 3: datePart = `${pad(m+1)}/${pad(dd)}/${y}`; break;
     }
 
     // Формат часу
-    let timeStr;
+    let timePart;
     if (timeFmt === 2) {
-      timeStr = `${pad(h)}:${pad(min)}`;
+      timePart = `${pad(h)}:${pad(min)}`;
     } else {
       const sep = timeFmt === 0 ? ':' : '.';
-      timeStr = `${pad(h)}${sep}${pad(min)}${sep}${pad(sec)}`;
+      timePart = `${pad(h)}${sep}${pad(min)}${sep}${pad(sec)}`;
     }
+
+    const dateTimeStr = datePart + ' ' + timePart;
 
     generatedData.push({
       number: globalIndex++,
-      dateStr: dateStr,
-      timeStr: timeStr,
-      fullDate: new Date(y, m, dd, h, min, sec)   // для правильного сортування
+      dateTime: dateTimeStr,
+      fullDate: new Date(y, m, dd, h, min, sec)
     });
   }
 
-  // 3. Сортуємо за реальним часом (хронологічно)
+  // Сортування за часом
   generatedData.sort((a, b) => a.fullDate - b.fullDate);
 
-  // 4. Показуємо результат
   showPreview();
   resultSection.classList.remove('hidden');
 });
@@ -349,13 +346,12 @@ function showPreview() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.number}</td>
-      <td>${row.dateStr}</td>
-      <td>${row.timeStr}</td>
+      <td>${row.dateTime}</td>
     `;
     previewBody.appendChild(tr);
   });
 
-  const uniqueDays = new Set(generatedData.map(r => r.dateStr)).size;
+  const uniqueDays = new Set(generatedData.map(r => r.dateTime.split(' ')[0])).size;
   let txt = `Згенеровано <strong>${generatedData.length}</strong> записів за <strong>${uniqueDays}</strong> різних робочих днів (випадковий розподіл)`;
   if (generatedData.length > MAX_PREVIEW) {
     txt += ` (показано перші ${MAX_PREVIEW})`;
@@ -363,9 +359,7 @@ function showPreview() {
   resultInfo.innerHTML = txt;
 }
 
-// ──────────────────────────────────────────────
-// Очистити форму
-// ──────────────────────────────────────────────
+// Очистити
 document.getElementById('clearBtn').addEventListener('click', () => {
   form.reset();
   document.getElementById('count').value = 100;
@@ -374,19 +368,17 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   generatedData = [];
 });
 
-// ──────────────────────────────────────────────
-// Скачати CSV
-// ──────────────────────────────────────────────
+// CSV
 document.getElementById('downloadCsv').addEventListener('click', () => {
   if (!generatedData.length) return;
 
-  const start = generatedData[0].dateStr.replace(/\D/g,'').slice(0,8);
-  const end   = generatedData[generatedData.length-1].dateStr.replace(/\D/g,'').slice(0,8);
+  const start = generatedData[0].dateTime.split(' ')[0].replace(/\D/g,'').slice(0,8);
+  const end   = generatedData[generatedData.length-1].dateTime.split(' ')[0].replace(/\D/g,'').slice(0,8);
   const filename = `random-work-times-${start}-${end}.csv`;
 
-  let csv = 'Number,Date,Time\n';
+  let csv = 'Number,DateTime\n';
   generatedData.forEach(r => {
-    csv += `${r.number},"${r.dateStr}","${r.timeStr}"\n`;
+    csv += `${r.number},"${r.dateTime.replace(/"/g, '""')}"\n`;
   });
 
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -398,25 +390,23 @@ document.getElementById('downloadCsv').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// ──────────────────────────────────────────────
-// Скачати XLSX
-// ──────────────────────────────────────────────
+// XLSX
 document.getElementById('downloadXlsx').addEventListener('click', () => {
   if (!generatedData.length) return;
 
-  const start = generatedData[0].dateStr.replace(/\D/g,'').slice(0,8);
-  const end   = generatedData[generatedData.length-1].dateStr.replace(/\D/g,'').slice(0,8);
+  const start = generatedData[0].dateTime.split(' ')[0].replace(/\D/g,'').slice(0,8);
+  const end   = generatedData[generatedData.length-1].dateTime.split(' ')[0].replace(/\D/g,'').slice(0,8);
   const filename = `random-work-times-${start}-${end}.xlsx`;
 
   const ws_data = [
-    ['Number', 'Date', 'Time'],
-    ...generatedData.map(r => [r.number, r.dateStr, r.timeStr])
+    ['Number', 'DateTime'],
+    ...generatedData.map(r => [r.number, r.dateTime])
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Work Times');
-  ws['!cols'] = [{wch:8}, {wch:12}, {wch:10}];
+  ws['!cols'] = [{wch:8}, {wch:20}];
 
   XLSX.writeFile(wb, filename);
 });
