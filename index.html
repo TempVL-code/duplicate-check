@@ -35,22 +35,9 @@
       line-height: 1.5;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.8rem;
-    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    h1 { margin: 0; font-size: 1.8rem; }
 
     .theme-toggle {
       background: none;
@@ -72,17 +59,9 @@
       gap: 1.2rem;
       margin-bottom: 1.5rem;
     }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 
-    @media (max-width: 600px) {
-      .form-grid { grid-template-columns: 1fr; }
-    }
-
-    label {
-      display: block;
-      margin-bottom: 0.4rem;
-      font-weight: 500;
-    }
-
+    label { display: block; margin-bottom: 0.4rem; font-weight: 500; }
     input, select {
       width: 100%;
       padding: 0.6rem 0.9rem;
@@ -93,9 +72,7 @@
       font-size: 1rem;
     }
 
-    .full-width {
-      grid-column: 1 / -1;
-    }
+    .full-width { grid-column: 1 / -1; }
 
     .btn {
       padding: 0.7rem 1.4rem;
@@ -107,17 +84,12 @@
       color: white;
       transition: background 0.15s;
     }
-
     .btn:hover { background: #539bf5; }
-
     .btn-secondary {
       background: var(--border);
       color: var(--text);
     }
-
-    .btn-secondary:hover {
-      background: #444d56;
-    }
+    .btn-secondary:hover { background: #444d56; }
 
     .error {
       color: var(--error);
@@ -128,10 +100,7 @@
       border-left: 4px solid var(--error);
     }
 
-    .result-info {
-      margin: 1.5rem 0 1rem;
-      font-weight: 500;
-    }
+    .result-info { margin: 1.5rem 0 1rem; font-weight: 500; }
 
     table {
       width: 100%;
@@ -142,17 +111,12 @@
       overflow: hidden;
       margin-bottom: 1.5rem;
     }
-
     th, td {
       padding: 0.75rem 1rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
     }
-
-    th {
-      background: rgba(88,166,255,0.12);
-      font-weight: 600;
-    }
+    th { background: rgba(88,166,255,0.12); font-weight: 600; }
 
     .actions {
       display: flex;
@@ -160,7 +124,6 @@
       flex-wrap: wrap;
       margin-top: 1.5rem;
     }
-
     .hidden { display: none; }
   </style>
 </head>
@@ -174,24 +137,19 @@
   </header>
 
   <form id="genForm">
-
     <div class="form-grid">
-
       <div>
         <label for="start">Дата початку</label>
         <input type="date" id="start" required>
       </div>
-
       <div>
         <label for="end">Дата закінчення</label>
         <input type="date" id="end" required>
       </div>
-
       <div>
         <label for="count">Кількість записів</label>
         <input type="number" id="count" min="1" max="10000" value="100" required>
       </div>
-
       <div>
         <label for="dateFmt">Формат дати</label>
         <select id="dateFmt">
@@ -201,7 +159,6 @@
           <option value="3">MM/DD/YYYY</option>
         </select>
       </div>
-
       <div>
         <label for="timeFmt">Формат часу</label>
         <select id="timeFmt">
@@ -210,14 +167,11 @@
           <option value="2">HH:MM</option>
         </select>
       </div>
-
       <div class="full-width" style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1.2rem;">
         <button type="submit" class="btn">Згенерувати</button>
         <button type="button" id="clearBtn" class="btn btn-secondary">Очистити</button>
       </div>
-
     </div>
-
   </form>
 
   <div id="errorBox" class="error hidden"></div>
@@ -248,7 +202,7 @@
 
 <script>
 // ──────────────────────────────────────────────
-//  Налаштування теми
+// Налаштування теми
 // ──────────────────────────────────────────────
 const themeBtn = document.getElementById('themeBtn');
 const html = document.documentElement;
@@ -268,9 +222,9 @@ themeBtn.addEventListener('click', () => {
 });
 
 // ──────────────────────────────────────────────
-//  Основна логіка
+// Основна логіка
 // ──────────────────────────────────────────────
-let generatedData = []; // масив {number, dateStr, timeStr}
+let generatedData = [];
 
 const form = document.getElementById('genForm');
 const errorBox = document.getElementById('errorBox');
@@ -307,7 +261,7 @@ form.addEventListener('submit', e => {
     return;
   }
 
-  // 1. Збираємо робочі дні
+  // 1. Збираємо всі робочі дні
   const workingDays = [];
   let current = new Date(start);
   while (current <= end) {
@@ -323,52 +277,52 @@ form.addEventListener('submit', e => {
     return;
   }
 
-  // 2. Рівномірний розподіл
-  const daysCount = workingDays.length;
-  const base = Math.floor(count / daysCount);
-  const extra = count % daysCount;
-
-  const countsPerDay = new Array(daysCount).fill(base);
-  for (let i = 0; i < extra; i++) {
-    countsPerDay[i]++;
-  }
-
-  // 3. Генерація даних
+  // 2. НОВА ЛОГІКА — абсолютно випадковий розподіл
   generatedData = [];
   let globalIndex = 1;
 
-  for (let d = 0; d < daysCount; d++) {
-    const dayDate = workingDays[d];
-    const y = dayDate.getFullYear();
-    const m = dayDate.getMonth();
+  for (let i = 0; i < count; i++) {
+    // Випадково обираємо будь-який робочий день
+    const randomDayIndex = Math.floor(Math.random() * workingDays.length);
+    const dayDate = workingDays[randomDayIndex];
+
+    const y  = dayDate.getFullYear();
+    const m  = dayDate.getMonth();
     const dd = dayDate.getDate();
 
-    for (let i = 0; i < countsPerDay[d]; i++) {
-      let h = 9 + Math.floor(Math.random() * 10);     // 9..18
-      let min = Math.floor(Math.random() * 60);
-      let sec = Math.floor(Math.random() * 60);
+    // Генеруємо випадковий час 09:00–18:59:59
+    const h   = 9 + Math.floor(Math.random() * 10);     // 9..18
+    const min = Math.floor(Math.random() * 60);
+    const sec = Math.floor(Math.random() * 60);
 
-      // Форматуємо дату
-      let dateStr;
-      switch (dateFmt) {
-        case 0: dateStr = `${y}-${pad(m+1)}-${pad(dd)}`; break;
-        case 1: dateStr = `${pad(dd)}.${pad(m+1)}.${y}`; break;
-        case 2: dateStr = `${pad(dd)}/${pad(m+1)}/${y}`; break;
-        case 3: dateStr = `${pad(m+1)}/${pad(dd)}/${y}`; break;
-      }
-
-      // Форматуємо час
-      let timeStr;
-      if (timeFmt === 2) {
-        timeStr = `${pad(h)}:${pad(min)}`;
-      } else {
-        const sep = timeFmt === 0 ? ':' : '.';
-        timeStr = `${pad(h)}${sep}${pad(min)}${sep}${pad(sec)}`;
-      }
-
-      generatedData.push({ number: globalIndex++, dateStr, timeStr });
+    // Формат дати
+    let dateStr;
+    switch (dateFmt) {
+      case 0: dateStr = `${y}-${pad(m+1)}-${pad(dd)}`; break;
+      case 1: dateStr = `${pad(dd)}.${pad(m+1)}.${y}`; break;
+      case 2: dateStr = `${pad(dd)}/${pad(m+1)}/${y}`; break;
+      case 3: dateStr = `${pad(m+1)}/${pad(dd)}/${y}`; break;
     }
+
+    // Формат часу
+    let timeStr;
+    if (timeFmt === 2) {
+      timeStr = `${pad(h)}:${pad(min)}`;
+    } else {
+      const sep = timeFmt === 0 ? ':' : '.';
+      timeStr = `${pad(h)}${sep}${pad(min)}${sep}${pad(sec)}`;
+    }
+
+    generatedData.push({
+      number: globalIndex++,
+      dateStr: dateStr,
+      timeStr: timeStr,
+      fullDate: new Date(y, m, dd, h, min, sec)   // для правильного сортування
+    });
   }
+
+  // 3. Сортуємо за реальним часом (хронологічно)
+  generatedData.sort((a, b) => a.fullDate - b.fullDate);
 
   // 4. Показуємо результат
   showPreview();
@@ -401,15 +355,16 @@ function showPreview() {
     previewBody.appendChild(tr);
   });
 
-  let txt = `Згенеровано <strong>${generatedData.length}</strong> записів за <strong>${new Set(generatedData.map(r => r.dateStr)).size}</strong> робочих днів`;
+  const uniqueDays = new Set(generatedData.map(r => r.dateStr)).size;
+  let txt = `Згенеровано <strong>${generatedData.length}</strong> записів за <strong>${uniqueDays}</strong> різних робочих днів (випадковий розподіл)`;
   if (generatedData.length > MAX_PREVIEW) {
-    txt += ` (у таблиці показано перші ${MAX_PREVIEW})`;
+    txt += ` (показано перші ${MAX_PREVIEW})`;
   }
   resultInfo.innerHTML = txt;
 }
 
 // ──────────────────────────────────────────────
-//  Очистити форму
+// Очистити форму
 // ──────────────────────────────────────────────
 document.getElementById('clearBtn').addEventListener('click', () => {
   form.reset();
@@ -420,7 +375,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 
 // ──────────────────────────────────────────────
-//  Скачати CSV
+// Скачати CSV
 // ──────────────────────────────────────────────
 document.getElementById('downloadCsv').addEventListener('click', () => {
   if (!generatedData.length) return;
@@ -444,7 +399,7 @@ document.getElementById('downloadCsv').addEventListener('click', () => {
 });
 
 // ──────────────────────────────────────────────
-//  Скачати XLSX (SheetJS)
+// Скачати XLSX
 // ──────────────────────────────────────────────
 document.getElementById('downloadXlsx').addEventListener('click', () => {
   if (!generatedData.length) return;
@@ -461,9 +416,7 @@ document.getElementById('downloadXlsx').addEventListener('click', () => {
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Work Times');
-
-  // Автоширина (опціонально)
-  ws['!cols'] = [ {wch:8}, {wch:12}, {wch:10} ];
+  ws['!cols'] = [{wch:8}, {wch:12}, {wch:10}];
 
   XLSX.writeFile(wb, filename);
 });
