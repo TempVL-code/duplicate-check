@@ -1,125 +1,473 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="uk" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<title>Перевірка дублікатів</title>
-<style>
-body { font-family: Arial, sans-serif; max-width: 1100px; margin: 30px auto; }
-textarea { width: 100%; height: 220px; }
-button { padding: 8px 16px; margin: 5px 5px 5px 0; }
-pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; }
-input { width: 60px; }
-.stat { font-weight: bold; margin: 5px 0; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Генератор робочих дат і часу</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --text: #c9d1d9;
+      --card: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --error: #f85149;
+      --success: #3fb950;
+    }
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --text: #24292e;
+      --card: #f6f8fa;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --error: #d73a49;
+      --success: #2ea44f;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 1.2rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.6rem 0.9rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .btn {
+      padding: 0.7rem 1.4rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      transition: background 0.15s;
+    }
+
+    .btn:hover { background: #539bf5; }
+
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #444d56;
+    }
+
+    .error {
+      color: var(--error);
+      background: rgba(248,81,73,0.12);
+      padding: 0.8rem;
+      border-radius: 6px;
+      margin: 1rem 0;
+      border-left: 4px solid var(--error);
+    }
+
+    .result-info {
+      margin: 1.5rem 0 1rem;
+      font-weight: 500;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: rgba(88,166,255,0.12);
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
 
-<h2>🔁 Перевірка дублікатів номерів</h2>
+<div class="container">
 
-<p>
-Колонка з номером №
-<input type="number" id="colIndex" value="3" min="1">
-</p>
+  <header>
+    <h1>Генератор робочих дат і часу</h1>
+    <button class="theme-toggle" id="themeBtn" title="Змінити тему">☀️</button>
+  </header>
 
-<textarea placeholder="Встав дані (Ctrl+V) або завантаж CSV / TSV"></textarea>
-<br>
-<input type="file" accept=".csv,.tsv,.txt">
-<br><br>
+  <form id="genForm">
 
-<button onclick="checkDuplicates()">Перевірити</button>
-<button onclick="downloadDuplicates()">📥 Дублі (CSV)</button>
+    <div class="form-grid">
 
-<h3>📊 Статистика</h3>
-<div class="stat" id="stats"></div>
+      <div>
+        <label for="start">Дата початку</label>
+        <input type="date" id="start" required>
+      </div>
 
-<h3>🔁 Дублі (згруповані):</h3>
-<pre id="duplicates"></pre>
+      <div>
+        <label for="end">Дата закінчення</label>
+        <input type="date" id="end" required>
+      </div>
+
+      <div>
+        <label for="count">Кількість записів</label>
+        <input type="number" id="count" min="1" max="10000" value="100" required>
+      </div>
+
+      <div>
+        <label for="dateFmt">Формат дати</label>
+        <select id="dateFmt">
+          <option value="0">YYYY-MM-DD</option>
+          <option value="1" selected>DD.MM.YYYY</option>
+          <option value="2">DD/MM/YYYY</option>
+          <option value="3">MM/DD/YYYY</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="timeFmt">Формат часу</label>
+        <select id="timeFmt">
+          <option value="0" selected>HH:MM:SS</option>
+          <option value="1">HH.MM.SS</option>
+          <option value="2">HH:MM</option>
+        </select>
+      </div>
+
+      <div class="full-width" style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1.2rem;">
+        <button type="submit" class="btn">Згенерувати</button>
+        <button type="button" id="clearBtn" class="btn btn-secondary">Очистити</button>
+      </div>
+
+    </div>
+
+  </form>
+
+  <div id="errorBox" class="error hidden"></div>
+
+  <div id="resultSection" class="hidden">
+    <div class="result-info" id="resultInfo"></div>
+
+    <div style="max-height:500px; overflow:auto; border:1px solid var(--border); border-radius:6px;">
+      <table id="previewTable">
+        <thead>
+          <tr>
+            <th>№</th>
+            <th>Дата</th>
+            <th>Час</th>
+          </tr>
+        </thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button id="downloadCsv" class="btn">Скачати CSV</button>
+      <button id="downloadXlsx" class="btn">Скачати XLSX</button>
+    </div>
+  </div>
+
+</div>
 
 <script>
-let duplicateData = [];
+// ──────────────────────────────────────────────
+//  Налаштування теми
+// ──────────────────────────────────────────────
+const themeBtn = document.getElementById('themeBtn');
+const html = document.documentElement;
 
-function splitLine(line) {
-  return line.split(/\t|;|,(?=(?:[^"]*"[^"]*")*[^"]*$)|\s{2,}/);
+function setTheme(theme) {
+  html.dataset.theme = theme;
+  themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('theme', theme);
 }
 
-function normalize(val) {
-  return val.replace(/^'+/, "").trim();
-}
+let savedTheme = localStorage.getItem('theme') || 'dark';
+setTheme(savedTheme);
 
-function checkDuplicates() {
-  const text = document.querySelector("textarea").value.trim();
-  const colIndex = parseInt(document.getElementById("colIndex").value, 10) - 1;
-  if (!text) return;
+themeBtn.addEventListener('click', () => {
+  const current = html.dataset.theme;
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
 
-  const lines = text.split(/\r?\n/);
-  const groups = {};
-  const order = [];
+// ──────────────────────────────────────────────
+//  Основна логіка
+// ──────────────────────────────────────────────
+let generatedData = []; // масив {number, dateStr, timeStr}
 
-  for (const line of lines) {
-    const cols = splitLine(line);
-    if (!cols[colIndex]) continue;
+const form = document.getElementById('genForm');
+const errorBox = document.getElementById('errorBox');
+const resultSection = document.getElementById('resultSection');
+const resultInfo = document.getElementById('resultInfo');
+const previewBody = document.getElementById('previewBody');
 
-    const number = normalize(cols[colIndex]);
-    if (!groups[number]) {
-      groups[number] = [];
-      order.push(number);
-    }
-    groups[number].push(line);
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  errorBox.classList.add('hidden');
+  resultSection.classList.add('hidden');
+
+  const startStr = document.getElementById('start').value;
+  const endStr   = document.getElementById('end').value;
+  const count    = parseInt(document.getElementById('count').value);
+  const dateFmt  = parseInt(document.getElementById('dateFmt').value);
+  const timeFmt  = parseInt(document.getElementById('timeFmt').value);
+
+  if (!startStr || !endStr) {
+    showError('Вкажіть обидві дати');
+    return;
   }
 
-  duplicateData = [];
-  let dupOut = "";
-  let duplicateNumberCount = 0;
-  let duplicateRowCount = 0;
+  const start = new Date(startStr);
+  const end   = new Date(endStr);
 
-  for (const number of order) {
-    const rows = groups[number];
-    if (rows.length > 1) {
-      duplicateNumberCount++;
-      duplicateRowCount += rows.length;
-      for (const row of rows) {
-        const line = `${row} — Дубль (${rows.length} рази)`;
-        duplicateData.push(line);
-        dupOut += line + "\n";
+  if (start > end) {
+    showError('Дата початку не може бути пізніше дати закінчення');
+    return;
+  }
+
+  if (isNaN(count) || count < 1 || count > 10000) {
+    showError('Кількість має бути від 1 до 10000');
+    return;
+  }
+
+  // 1. Збираємо робочі дні
+  const workingDays = [];
+  let current = new Date(start);
+  while (current <= end) {
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) {
+      workingDays.push(new Date(current));
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  if (workingDays.length === 0) {
+    showError('У вибраному періоді немає робочих днів (Пн–Пт)');
+    return;
+  }
+
+  // 2. Рівномірний розподіл
+  const daysCount = workingDays.length;
+  const base = Math.floor(count / daysCount);
+  const extra = count % daysCount;
+
+  const countsPerDay = new Array(daysCount).fill(base);
+  for (let i = 0; i < extra; i++) {
+    countsPerDay[i]++;
+  }
+
+  // 3. Генерація даних
+  generatedData = [];
+  let globalIndex = 1;
+
+  for (let d = 0; d < daysCount; d++) {
+    const dayDate = workingDays[d];
+    const y = dayDate.getFullYear();
+    const m = dayDate.getMonth();
+    const dd = dayDate.getDate();
+
+    for (let i = 0; i < countsPerDay[d]; i++) {
+      let h = 9 + Math.floor(Math.random() * 10);     // 9..18
+      let min = Math.floor(Math.random() * 60);
+      let sec = Math.floor(Math.random() * 60);
+
+      // Форматуємо дату
+      let dateStr;
+      switch (dateFmt) {
+        case 0: dateStr = `${y}-${pad(m+1)}-${pad(dd)}`; break;
+        case 1: dateStr = `${pad(dd)}.${pad(m+1)}.${y}`; break;
+        case 2: dateStr = `${pad(dd)}/${pad(m+1)}/${y}`; break;
+        case 3: dateStr = `${pad(m+1)}/${pad(dd)}/${y}`; break;
       }
-      dupOut += "\n";
+
+      // Форматуємо час
+      let timeStr;
+      if (timeFmt === 2) {
+        timeStr = `${pad(h)}:${pad(min)}`;
+      } else {
+        const sep = timeFmt === 0 ? ':' : '.';
+        timeStr = `${pad(h)}${sep}${pad(min)}${sep}${pad(sec)}`;
+      }
+
+      generatedData.push({ number: globalIndex++, dateStr, timeStr });
     }
   }
 
-  const totalUniqueNumbers = order.length;
+  // 4. Показуємо результат
+  showPreview();
+  resultSection.classList.remove('hidden');
+});
 
-  document.getElementById("duplicates").textContent =
-    dupOut || "Дублікатів не знайдено";
-
-  document.getElementById("stats").textContent =
-    `🔢 Унікальних номерів (всього): ${totalUniqueNumbers} | ` +
-    `🔁 Номерів з дублями: ${duplicateNumberCount} | ` +
-    `📄 Рядків-дублів: ${duplicateRowCount}`;
+function pad(n) {
+  return n.toString().padStart(2, '0');
 }
 
-function downloadCSV(filename, rows) {
-  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showPreview() {
+  previewBody.innerHTML = '';
+
+  const MAX_PREVIEW = 500;
+  const toShow = generatedData.slice(0, MAX_PREVIEW);
+
+  toShow.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.number}</td>
+      <td>${row.dateStr}</td>
+      <td>${row.timeStr}</td>
+    `;
+    previewBody.appendChild(tr);
+  });
+
+  let txt = `Згенеровано <strong>${generatedData.length}</strong> записів за <strong>${new Set(generatedData.map(r => r.dateStr)).size}</strong> робочих днів`;
+  if (generatedData.length > MAX_PREVIEW) {
+    txt += ` (у таблиці показано перші ${MAX_PREVIEW})`;
+  }
+  resultInfo.innerHTML = txt;
+}
+
+// ──────────────────────────────────────────────
+//  Очистити форму
+// ──────────────────────────────────────────────
+document.getElementById('clearBtn').addEventListener('click', () => {
+  form.reset();
+  document.getElementById('count').value = 100;
+  errorBox.classList.add('hidden');
+  resultSection.classList.add('hidden');
+  generatedData = [];
+});
+
+// ──────────────────────────────────────────────
+//  Скачати CSV
+// ──────────────────────────────────────────────
+document.getElementById('downloadCsv').addEventListener('click', () => {
+  if (!generatedData.length) return;
+
+  const start = generatedData[0].dateStr.replace(/\D/g,'').slice(0,8);
+  const end   = generatedData[generatedData.length-1].dateStr.replace(/\D/g,'').slice(0,8);
+  const filename = `random-work-times-${start}-${end}.csv`;
+
+  let csv = 'Number,Date,Time\n';
+  generatedData.forEach(r => {
+    csv += `${r.number},"${r.dateStr}","${r.timeStr}"\n`;
+  });
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
   link.download = filename;
   link.click();
-}
-
-function downloadDuplicates() {
-  if (!duplicateData.length) return;
-  downloadCSV("duplicate_rows.csv", duplicateData);
-}
-
-document.querySelector("input[type=file]").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    document.querySelector("textarea").value = reader.result;
-  };
-  reader.readAsText(file);
+  URL.revokeObjectURL(url);
 });
-</script>
 
+// ──────────────────────────────────────────────
+//  Скачати XLSX (SheetJS)
+// ──────────────────────────────────────────────
+document.getElementById('downloadXlsx').addEventListener('click', () => {
+  if (!generatedData.length) return;
+
+  const start = generatedData[0].dateStr.replace(/\D/g,'').slice(0,8);
+  const end   = generatedData[generatedData.length-1].dateStr.replace(/\D/g,'').slice(0,8);
+  const filename = `random-work-times-${start}-${end}.xlsx`;
+
+  const ws_data = [
+    ['Number', 'Date', 'Time'],
+    ...generatedData.map(r => [r.number, r.dateStr, r.timeStr])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Work Times');
+
+  // Автоширина (опціонально)
+  ws['!cols'] = [ {wch:8}, {wch:12}, {wch:10} ];
+
+  XLSX.writeFile(wb, filename);
+});
+
+</script>
 </body>
 </html>
