@@ -615,9 +615,8 @@ form.addEventListener('submit', e => {
     return;
   }
 
-  generatedData = [];
-  let globalIndex = 1;
-
+  // 1) Генеруємо масив дат/часів
+  const dates = [];
   for (let i = 0; i < targetCount; i++) {
     const randomDayIndex = Math.floor(Math.random() * workingDays.length);
     const dayDate = workingDays[randomDayIndex];
@@ -629,6 +628,26 @@ form.addEventListener('submit', e => {
     const h   = 9 + Math.floor(Math.random() * 10);
     const min = Math.floor(Math.random() * 60);
     const sec = Math.floor(Math.random() * 60);
+
+    dates.push(new Date(y, m, dd, h, min, sec));
+  }
+
+  // 2) Сортуємо дати за часом
+  dates.sort((a, b) => a - b);  // [web:73]
+
+  // 3) Формуємо generatedData: унікальні в своєму порядку, дати – відсортовані
+  generatedData = [];
+  let globalIndex = 1;
+
+  for (let i = 0; i < targetCount; i++) {
+    const dt = dates[i];
+
+    const y  = dt.getFullYear();
+    const m  = dt.getMonth();
+    const dd = dt.getDate();
+    const h  = dt.getHours();
+    const min = dt.getMinutes();
+    const sec = dt.getSeconds();
 
     let datePart;
     switch (dateFmt) {
@@ -652,11 +671,9 @@ form.addEventListener('submit', e => {
       number: globalIndex++,
       unique: useUnique ? (uniqueNumbers[i] || '') : '',
       dateTime: dateTimeStr,
-      fullDate: new Date(y, m, dd, h, min, sec)
+      fullDate: dt
     });
   }
-
-  // ВАЖЛИВО: не сортуємо, щоб порядок залишився як у введених даних
 
   showPreview();
   resultSection.classList.remove('hidden');
