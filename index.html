@@ -349,7 +349,7 @@
   <header>
     <div class="title-block">
       <span class="badge">⚙️ ПоТужний Генератор Дат</span>
-      <h1>Робочі дати з часом для ваших унікальних номерів</h1>
+      <h1>ПоТужний Генератор ДатГодин</h1>
       <div class="subtitle">Аналіз · Генерація · Excel</div>
     </div>
     <button class="theme-toggle" id="themeBtn" title="Змінити тему">🌙</button>
@@ -505,7 +505,7 @@ function parseUniqueNumbers(raw) {
 
 // Авто-лок/анлок поля count при зміні textarea
 function updateCountLock() {
-  const { valid, invalid } = parseUniqueNumbers(uniqueInput.value);
+  const { valid } = parseUniqueNumbers(uniqueInput.value);
 
   if (valid.length > 0) {
     countInput.value = valid.length;
